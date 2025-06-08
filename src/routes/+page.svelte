@@ -1,164 +1,198 @@
 <script>
-  import { Box, Flex, Text, Heading, Image, Button, VStack, HStack, Input, Textarea, useToast } from "@chakra-ui/svelte";
+  import {
+    Box, Flex, Text, Heading, VStack, Button, Input, Textarea, Image, useToast
+  } from "@chakra-ui/svelte";
+  import { fade, slide } from "svelte/transition";
+  import { useInView } from "$lib/useInView.js";
+  import { onMount } from "svelte";
+  import { writable } from "svelte/store";
 
-  const featuredFilms = [
-    {
-      title: "Oxford, Mississippi",
-      subtitle: "Beautiful Speeches, Beautiful Couple",
-      date: "Jul 8, 2023",
-      thumb: "/gallery1.jpg",
-      link: "https://example.com/film1"
-    },
-    {
-      title: "Raymond, Mississippi",
-      subtitle: "Stunning Couple / Thoughtful Wedding",
-      date: "Mar 26, 2022",
-      thumb: "/gallery2.jpg",
-      link: "https://example.com/film2"
-    }
-  ];
+  // Scroll observer for animations
+  const [visibleHero, observeHero] = useInView();
+  const [visibleFilms, observeFilms] = useInView();
+  const [visibleContact, observeContact] = useInView();
+  const [visibleQuick, observeQuick] = useInView();
+  const [visibleCTA, observeCTA] = useInView();
 
-  let name = "";
-  let email = "";
-  let message = "";
+  // Current section store for nav dots
+  export const currentSection = writable("hero");
+  const sections = ["hero", "films", "contact", "quick", "cta"];
 
+  function handleScroll() {
+    const scrollY = document.querySelector(".snap-container").scrollTop;
+    sections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && scrollY >= el.offsetTop - 50) {
+        currentSection.set(id);
+      }
+    });
+  }
+
+  // Contact form state
+  let name = "", email = "", message = "";
   const toast = useToast();
 
-  const handleSubmit = () => {
+  const handleContactSubmit = async () => {
     if (!name || !email || !message) {
       toast({
-        title: "Missing Fields",
-        description: "Please fill out all fields.",
+        title: "Missing fields",
+        description: "Please complete the form.",
         status: "error",
-        duration: 4000,
-        isClosable: true
+        duration: 3000
       });
       return;
     }
 
-    console.log("Submitted:", { name, email, message });
-
-    toast({
-      title: "Message Sent",
-      description: "We'll get back to you shortly.",
-      status: "success",
-      duration: 4000,
-      isClosable: true
+    const res = await fetch("/api/full-contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, message })
     });
 
-    name = "";
-    email = "";
-    message = "";
+    if (res.ok) {
+      toast({ title: "Message sent", status: "success" });
+      name = email = message = "";
+    } else {
+      toast({ title: "Failed to send", status: "error" });
+    }
+  };
+
+  // Quick inquiry
+  const inquiries = [
+    "Are you available for my wedding date?",
+    "How much do you charge for elopements?",
+    "Can I see a full wedding video?",
+    "Do you travel outside Mississippi?"
+  ];
+
+  const sendQuickMessage = async (msg) => {
+    const res = await fetch("/api/quick-inquiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    toast({
+      title: res.ok ? "Sent!" : "Failed to send",
+      description: res.ok ? "We’ll be in touch." : "Try again later.",
+      status: res.ok ? "success" : "error"
+    });
   };
 </script>
 
 <style>
+  .snap-container {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+  }
+  .snap-section {
+    height: 100vh;
+    scroll-snap-align: start;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
   .hero-bg {
-    background-image: url('/path-to-your-image.jpg');
+    background-image: url('/hero-bg.webp');
     background-size: cover;
     background-position: center;
     height: 100vh;
     width: 100%;
+    filter: brightness(0.6) contrast(1.1);
   }
-
-  .overlay {
-    background-color: rgba(0, 0, 0, 0.4);
-    width: 100%;
-    height: 100%;
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #4a5568;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1a202c;
+  }
+  .nav-dot {
+    margin: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4a5568;
+  }
+  .nav-dot.active {
+    background: #fff;
   }
 </style>
 
-<!-- Hero Section -->
-<Flex class="hero-bg" justify="center" align="center">
-  <Box class="overlay" display="flex" alignItems="center" justifyContent="center" px="6" textAlign="center">
-    <Box color="white">
-      <Heading fontSize={{ base: "2xl", md: "4xl" }}>
-        Encouraging couples to relive<br />
-        moments, expressions,<br />
-        and feelings through narrative wedding films.
-      </Heading>
-    </Box>
-  </Box>
-</Flex>
+<!-- SCROLL CONTAINER -->
+<div class="snap-container" on:scroll={handleScroll}>
 
-<!-- Featured Wedding Films -->
-<Box px="6" py="12" bg="white">
-  <VStack spacing="6" align="start">
-    <Heading fontSize="2xl" fontWeight="semibold">01.</Heading>
-    <Text fontSize="xl" fontStyle="italic">featured wedding films</Text>
+  <!-- HERO -->
+  <section class="snap-section" id="hero" use:observeHero>
+    {#if $visibleHero}
+      <Flex class="hero-bg" direction="column" align="center" justify="center" transition:fade transition:slide={{ y: 50 }}>
+        <Box textAlign="center" px="6" color="white">
+          <Heading fontSize="4xl">Narrative Wedding Films</Heading>
+          <Text fontSize="lg" mt="4">
+            Encouraging couples to relive moments, expressions, and feelings through beautiful storytelling.
+          </Text>
+        </Box>
+      </Flex>
+    {/if}
+  </section>
 
-    <HStack overflowX="auto" spacing="6" py="4">
-      {#each featuredFilms as film}
-        <VStack minW="280px" spacing="3" align="start">
-          <a href={film.link} target="_blank" rel="noopener noreferrer">
-            <Image src={film.thumb} borderRadius="md" alt={film.title} />
-          </a>
-          <Box>
-            <Text fontWeight="bold">{film.title}</Text>
-            <Text fontSize="sm">{film.subtitle}</Text>
-            <Text fontSize="xs" color="gray.500">{film.date}</Text>
-          </Box>
-        </VStack>
-      {/each}
-    </HStack>
+  <!-- FEATURED FILMS -->
+  <section class="snap-section" id="films" use:observeFilms>
+    {#if $visibleFilms}
+      <Box textAlign="center" transition:fade transition:slide={{ y: 50 }}>
+        <Heading fontSize="2xl">Featured Films</Heading>
+        <Text mt="2">Short blurb about sample works</Text>
+      </Box>
+    {/if}
+  </section>
 
-    <Button variant="outline" size="lg" borderRadius="none" px="6">
-      WATCH MORE FILMS
-    </Button>
-  </VStack>
-</Box>
+  <!-- CONTACT FORM -->
+  <section class="snap-section" id="contact" use:observeContact>
+    {#if $visibleContact}
+      <VStack spacing="6" maxW="2xl" mx="auto" px="6" transition:fade transition:slide={{ y: 40 }}>
+        <Heading fontSize="2xl">Let’s Get In Touch</Heading>
+        <Input placeholder="Your Name" bind:value={name} />
+        <Input type="email" placeholder="Your Email" bind:value={email} />
+        <Textarea placeholder="Your Message..." rows="6" bind:value={message} />
+        <Button colorScheme="teal" on:click={handleContactSubmit}>Send Message</Button>
+      </VStack>
+    {/if}
+  </section>
 
-<!-- Interactive Contact / Booking Section -->
-<Box bg="white" px="6" py="16">
-  <VStack spacing="8" maxW="2xl" mx="auto" align="stretch">
-    <Heading textAlign="center" fontSize="2xl">03. let’s get together</Heading>
-    <Text fontSize="md" textAlign="center">
-      We'd love to hear more about your day. Tell us your wedding date, your vision, or any questions you have —
-      and we’ll start the conversation.
-    </Text>
+  <!-- QUICK INQUIRIES -->
+  <section class="snap-section" id="quick" use:observeQuick>
+    {#if $visibleQuick}
+      <VStack spacing="4" px="6" maxW="2xl" mx="auto" textAlign="center" transition:fade transition:slide={{ y: 40 }}>
+        <Heading fontSize="2xl">Quick Inquiries</Heading>
+        {#each inquiries as q}
+          <Button variant="outline" w="100%" on:click={() => sendQuickMessage(q)}>{q}</Button>
+        {/each}
+      </VStack>
+    {/if}
+  </section>
 
-    <VStack spacing="4">
-      <Input placeholder="Your Name" bind:value={name} />
-      <Input placeholder="Your Email" type="email" bind:value={email} />
-      <Textarea placeholder="Your Message..." rows="6" bind:value={message} />
-      <Button colorScheme="teal" on:click={handleSubmit}>
-        Send Message
-      </Button>
-    </VStack>
-  </VStack>
-</Box>
+  <!-- CTA / FOOTER -->
+  <section class="snap-section" id="cta" use:observeCTA>
+    {#if $visibleCTA}
+      <VStack spacing="4" px="6" textAlign="center" transition:fade transition:slide={{ y: 30 }}>
+        <Heading fontSize="xl">Want to know more?</Heading>
+        <Button variant="solid">Find Out More</Button>
+        <Text fontSize="sm" mt="8" color="gray.400">
+          hello@weareabundant.co<br />901.833.9039
+        </Text>
+      </VStack>
+    {/if}
+  </section>
+</div>
 
-<!-- Final CTA Section -->
-<Box bg="green.700" color="white" px="6" py="16">
-  <VStack spacing="6" maxW="2xl" mx="auto" textAlign="center">
-    <Heading fontSize="2xl">04. want to know more?</Heading>
-    <Text fontSize="md">
-      You’ve come here for more info and we’re here to provide it! Click the button below for details, FAQs,
-      and client reviews. Or just shoot us an email — we’re here for you.
-    </Text>
-    <Button variant="outline" color="white" borderColor="white" _hover={{ bg: "whiteAlpha.200" }}>
-      FIND OUT MORE
-    </Button>
-  </VStack>
-</Box>
-
-<!-- Footer Section -->
-<Box bg="white" py="12" px="6" textAlign="center">
-  <VStack spacing="4">
-    <Text fontSize="sm" color="gray.600" fontStyle="italic">
-      Cinematic Wedding Videography<br />
-      Mississippi. Memphis. Birmingham. Nationwide.
-    </Text>
-
-    <Box fontSize="xl" fontWeight="bold">abundant films</Box>
-
-    <HStack justify="center" spacing="4">
-      <a href="https://youtube.com" target="_blank">📺</a>
-      <a href="https://instagram.com" target="_blank">📸</a>
-      <a href="mailto:hello@weareabundant.co">📧</a>
-      <a href="https://facebook.com" target="_blank">📘</a>
-    </HStack>
-
-    <Text fontSize="sm" color="gray.500">hello@weareabundant.co<br />901.833.9039</Text>
-  </VStack>
-</Box>
+<!-- NAV DOTS -->
+<div style="position: fixed; top: 50%; right: 1rem; transform: translateY(-50%); z-index: 20;">
+  {#each sections as id}
+    <div class="nav-dot" class:active={$currentSection === id}></div>
+  {/each}
+</div>
