@@ -1,4 +1,4 @@
-import { extendTheme, theme as base } from "@chakra-ui/react";
+import { extendTheme } from "@chakra-ui/react";
 
 const theme = extendTheme({
   config: {
@@ -7,7 +7,7 @@ const theme = extendTheme({
   },
   fonts: {
     heading: "'Playfair Display', serif",
-    body: "'Open Sans', sans-serif",
+    body: "'Open Sans', sans-serif"
   },
   colors: {
     brand: {
