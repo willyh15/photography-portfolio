@@ -1,25 +1,17 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import path from 'path';
+import { defineConfig } from 'vite';
 
-/** @type {import('vite').UserConfig} */
-const config = {
+export default defineConfig({
   plugins: [sveltekit()],
-  resolve: {
-    alias: {
-      $lib: path.resolve('./src/lib'),
-      $components: path.resolve('./src/components')
-    }
-  },
-  css: {
-    postcss: {
-      plugins: [require('tailwindcss'), require('autoprefixer')]
-    }
-  },
-  server: {
-    fs: {
-      strict: false
+  build: {
+    target: 'es2020',
+    minify: 'esbuild',
+    sourcemap: false,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
+      }
     }
   }
-};
-
-export default config;
+});
