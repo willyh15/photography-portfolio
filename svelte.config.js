@@ -6,19 +6,19 @@ const config = {
     adapter: adapter(),
     alias: {
       $lib: 'src/lib',
-      $components: 'src/components',
+      $components: 'src/components'
     },
     prerender: {
-      default: true,
-    },
+      default: true
+    }
   },
 
   preprocess: preprocess({
     scss: {
-      includePaths: ['src'],
+      includePaths: ['src']
     },
-    postcss: true,
-  }),
+    postcss: true
+  })
 };
 
 export default config;
